@@ -1,47 +1,50 @@
-Synthetic example — invented data, not a real customer.
+# MCP Session Triage
 
-# Our app returned a booking reference. Was the job done?
+A free browser worksheet for reviewing one MCP tool-call log. Inspect explicit errors and retries, mark which calls fit the task, and download a short Markdown note.
 
-## What it looked like
+**No signup, API key or model call.** The example is invented. The worksheet does not establish whether the user completed their task.
 
-Across 1 session, 5 of the 6 calls came back without an error. A success total alone would not show where the session took a wrong turn.
+## Try it
 
-## What actually happened
+[Open the browser worksheet](https://whythread.github.io/mcp-session-example/worksheet/) or [browse the free resources](https://whythread.github.io/mcp-session-example/). No account is needed.
 
-1. The session used `list_tasks`, which lists open tasks, although the sample goal was to book an appointment. [(see record 1)](log.jsonl#L1)
-2. `find_slots`, which finds appointment times, rejected the word “thirty” as the appointment length. [(see record 2)](log.jsonl#L2)
-3. A linked retry used 30 minutes and returned 2 time options. [(see record 3)](log.jsonl#L3)
-4. `get_slot`, which looks up a time option, returned the chosen option’s reference. [(see record 4)](log.jsonl#L4)
-5. `reserve_slot`, which requests a booking, returned a booking reference. [(see record 5)](log.jsonl#L5)
-6. `get_booking`, which looks up a booking, returned that same reference. [(see record 6)](log.jsonl#L6)
+To run it locally, from this directory:
 
-## What this means
+```sh
+python3 -m http.server 8000 --bind 127.0.0.1
+```
 
-- The first tool choice did not match the sample’s stated goal.
-- The search error was a wrong value, not evidence of an outage.
-- The next search succeeded after the value changed; the earlier error still matters.
+Open <http://127.0.0.1:8000/worksheet/>. The six-call sample is already loaded. Stop the server with Ctrl+C when finished.
 
-## The decision
+1. Read the sample task and inspect the first call. Its wrong-tool annotation was written for this invented scenario.
+2. Follow line 2's argument error to the explicit retry on line 3.
+3. Mark relevance yourself, then select or download the review note.
 
-> **One test to try**
->
-> Try adding “Task lists only; not appointment bookings” to the task tool’s description. Repeat the same booking test and check whether it still picks the task tool first.
+Most logs need converting to the [documented shape](docs/format.md) first. Raw MCP JSON-RPC messages are not imported directly; for example, this reader expects an explicit status on each tool-call record, not nested inside a response envelope. Conversion is manual in this version. Remove secrets and personal data before loading a file.
 
-## What this can't tell you
+## What it shows
 
-Requests where no tool was called are invisible in this log.  
-The outcome is **unknown**: the log does not record whether the user got what they needed.
+- Explicit recorded statuses, including unknown or conflicting status.
+- Valid `retry_of` links to an earlier error from the same tool/source.
+- Exact string reuse between recorded return values and later arguments. A match does not prove causation.
+- Your relevance judgments and separately supplied notes.
 
-## See the evidence
+Read the [worked example](docs/worked-example.md), [short guide](worksheet/session-triage-guide.md), or the exact [six source records](log.jsonl). The [browser guide](worksheet/session-triage-guide.html) works from the local server.
 
-| Step | Record | What it shows |
-| --- | --- | --- |
-| 1 | [Record 1](log.jsonl#L1) | Open tasks were fetched instead of appointment times. |
-| 2 | [Record 2](log.jsonl#L2) | A word was rejected where a whole number was required. |
-| 3 | [Record 3](log.jsonl#L3) | The corrected search returned time options. |
-| 4 | [Record 4](log.jsonl#L4) | The selected time option was looked up. |
-| 5 | [Record 5](log.jsonl#L5) | The booking request returned a reference. |
-| 6 | [Record 6](log.jsonl#L6) | The booking lookup returned the same reference. |
+## What remains unknown
 
-Made by WhyThread — we're learning how MCP app owners understand what agents do with their apps.  
-Questions or thoughts: reply in the thread that linked you here.
+The file cannot show a request that made no tool call, recover the whole conversation, or establish task completion. It does not automatically detect the wrong tool or explain why a model selected one.
+
+The worksheet runs in your browser and does not upload your log, call a model, or use cookies or browser storage. Your browser may restore form text. Hosting still receives ordinary page requests, and optional external links open separate sites.
+
+## Contribute
+
+Useful contributions include small synthetic examples, a reproducible parser bug, a clearer explanation or an accessibility fix. See [CONTRIBUTING.md](CONTRIBUTING.md). Do not post private logs, credentials or customer records in issues.
+
+## About
+
+Made by [WhyThread](https://whythread.com/?utm_source=github&utm_medium=referral&utm_campaign=session_triage). The worksheet works independently of the product. AI tools assisted with implementation and review.
+
+## License
+
+[MIT](LICENSE).
